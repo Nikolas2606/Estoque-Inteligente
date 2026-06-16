@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">
+                <i class="bi bi-grid-1x2-fill text-accent me-2"></i>Dashboard de Estoque
+            </h1>
+            <p class="text-muted mb-0">Visualize e gerencie todos os produtos do inventário</p>
+        </div>
+
+        {% if current_user.role == 'gerente' %}
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <a href="{{ url_for('web.movimentacao') }}" class="btn btn-accent">
+                <i class="bi bi-arrow-left-right me-1"></i> Nova Movimentação
+            </a>
+            <a href="{{ url_for('web.criar_produto') }}" class="btn btn-outline-light">
+                <i class="bi bi-plus-lg me-1"></i> Novo Produto
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Barra de Busca -->
+    <div class="card card-glass mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="{{ url_for('web.dashboard') }}" class="d-flex gap-2" id="searchForm">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-transparent border-end-0">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" name="q" id="searchInput"
+                           class="form-control border-start-0"
+                           placeholder="Buscar produto pelo nome ou marca..."
+                           value="{{ busca }}" minlength="2" autocomplete="off">
+                </div>
+                <button type="submit" class="btn btn-accent px-4">Buscar</button>
+                {% if busca %}
+                <a href="{{ url_for('web.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    {% if busca %}
+    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+        <i class="bi bi-funnel-fill me-2"></i>
+        Exibindo resultados para: <strong class="ms-1">"{{ busca }}"</strong>
+        <span class="ms-2 badge bg-light text-dark">{{ pagination.total }} encontrado(s)</span>
+    </div>
+    {% endif %}
+
+    <!-- Grid de Produtos -->
+    {% if produtos %}
+    <div class="row g-4">
+        {% for produto in produtos %}
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="card card-glass card-produto h-100 {{ 'card-fora-estoque' if produto.total_estoque == 0 }}">
+                <div class="card-body">
+                    <!-- Header do Produto -->
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <!-- Thumbnail -->
+                        <div class="produto-thumb">
+                            {% if produto.url_imagem %}
+                            <img src="/fotos/{{ produto.url_imagem }}"
+                                 alt="{{ produto.nome }}"
+                                 class="img-fluid rounded"
+                                 onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22><rect fill=%22%23374151%22 width=%22100%22 height=%22100%22/><text fill=%22%239ca3af%22 x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2230%22>📦</text></svg>'">
+                            {% else %}
+                            <div class="produto-thumb-placeholder">
+                                <i class="bi bi-box-seam"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex-grow-1 min-width-0">
+                            <h5 class="card-title fw-semibold mb-1 text-truncate">
+                                {{ produto.nome }}
+                            </h5>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                {% if produto.marca %}
+                                <span class="badge bg-secondary bg-opacity-25 text-light">
+                                    {{ produto.marca }}
+                                </span>
+                                {% endif %}
+                                {% if produto.tamanho %}
+                                <span class="badge bg-info bg-opacity-25 text-info">
+                                    {{ produto.tamanho }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Badge de Estoque Total -->
+                        <div class="text-end">
+                            {% if produto.total_estoque > 0 %}
+                            <span class="badge badge-estoque bg-success bg-opacity-25 text-success">
+                                <i class="bi bi-check-circle me-1"></i>{{ produto.total_estoque }} un
+                            </span>
+                            {% else %}
+                            <span class="badge badge-estoque bg-danger bg-opacity-25 text-danger">
+                                <i class="bi bi-x-circle me-1"></i>Sem estoque
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Localizações no Estoque -->
+                    {% if produto.ocupacoes %}
+                    <div class="mb-3">
+                        <div class="small text-muted fw-medium mb-2">
+                            <i class="bi bi-geo-alt me-1"></i>Localizações
+                        </div>
+
+                        <!-- Card Layout (Desktop) -->
+                        <div class="posicoes-cards d-none d-md-flex flex-wrap gap-2">
+                            {% for ocupacao in produto.ocupacoes if ocupacao.quantidade > 0 %}
+                            <div class="posicao-card">
+                                <div class="posicao-codigo">{{ ocupacao.posicao.codigo }}</div>
+                                <div class="posicao-qtd">{{ ocupacao.quantidade }} un</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Tabela Compacta (Mobile) -->
+                        <div class="d-md-none">
+                            <table class="table table-sm table-borderless mb-0 posicao-table">
+                                <thead>
+                                    <tr>
+                                        <th class="text-muted small">Posição</th>
+                                        <th class="text-muted small text-end">Qtd</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ocupacao in produto.ocupacoes if ocupacao.quantidade > 0 %}
+                                    <tr>
+                                        <td><span class="badge bg-dark">{{ ocupacao.posicao.codigo }}</span></td>
+                                        <td class="text-end">{{ ocupacao.quantidade }} un</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if produto.descricao %}
+                    <p class="text-muted small mb-0 text-truncate-2">{{ produto.descricao }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Ações (Gerente) -->
+                {% if current_user.role == 'gerente' %}
+                <div class="card-footer bg-transparent border-top border-secondary border-opacity-25 d-flex gap-2">
+                    <a href="{{ url_for('web.editar_produto', id=produto.id) }}"
+                       class="btn btn-sm btn-outline-warning flex-grow-1">
+                        <i class="bi bi-pencil me-1"></i> Editar
+                    </a>
+                    <form method="POST" action="{{ url_for('web.excluir_produto', id=produto.id) }}"
+                          class="flex-grow-1"
+                          onsubmit="return confirm('Tem certeza que deseja excluir o produto \'{{ produto.nome }}\'? Esta ação não pode ser desfeita.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                            <i class="bi bi-trash me-1"></i> Excluir
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Paginação -->
+    {% if pagination.pages > 1 %}
+    <nav aria-label="Navegação de páginas" class="mt-4">
+        <ul class="pagination pagination-dark justify-content-center">
+            <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+                <a class="page-link" href="{{ url_for('web.dashboard', page=pagination.prev_num, q=busca) }}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+
+            {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if p %}
+                <li class="page-item {{ 'active' if p == pagination.page }}">
+                    <a class="page-link" href="{{ url_for('web.dashboard', page=p, q=busca) }}">{{ p }}</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% endif %}
+            {% endfor %}
+
+            <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+                <a class="page-link" href="{{ url_for('web.dashboard', page=pagination.next_num, q=busca) }}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-5">
+        <div class="empty-state-icon mb-3">
+            <i class="bi bi-inbox"></i>
+        </div>
+        <h4 class="fw-semibold mb-2">
+            {% if busca %}
+                Nenhum produto encontrado para "{{ busca }}"
+            {% else %}
+                Nenhum produto cadastrado
+            {% endif %}
+        </h4>
+        <p class="text-muted mb-4">
+            {% if busca %}
+                Tente buscar com outros termos ou limpe a busca.
+            {% else %}
+                Comece cadastrando produtos no estoque.
+            {% endif %}
+        </p>
+        {% if current_user.role == 'gerente' and not busca %}
+        <a href="{{ url_for('web.criar_produto') }}" class="btn btn-accent">
+            <i class="bi bi-plus-lg me-1"></i> Cadastrar Produto
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

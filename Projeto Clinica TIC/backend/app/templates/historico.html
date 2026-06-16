@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Histórico — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold">
+                <i class="bi bi-clock-history text-accent me-2"></i>Histórico de Movimentações
+            </h1>
+            <p class="text-muted mb-0">Auditoria completa de todas as operações de estoque</p>
+        </div>
+
+        <!-- Exportar CSV -->
+        <a href="{{ url_for('web.historico_csv', tipo=tipo_filtro, data_inicio=data_inicio, data_fim=data_fim) }}"
+           class="btn btn-outline-success mt-2 mt-md-0">
+            <i class="bi bi-filetype-csv me-1"></i> Exportar CSV
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card card-glass mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="{{ url_for('web.historico') }}" class="row g-3 align-items-end" id="filtroForm">
+                <div class="col-12 col-md-3">
+                    <label for="filtroTipo" class="form-label small fw-medium">Tipo</label>
+                    <select name="tipo" id="filtroTipo" class="form-select">
+                        <option value="">Todos os tipos</option>
+                        <option value="entrada" {{ 'selected' if tipo_filtro == 'entrada' }}>
+                            🟢 Entrada
+                        </option>
+                        <option value="saida" {{ 'selected' if tipo_filtro == 'saida' }}>
+                            🔴 Saída
+                        </option>
+                        <option value="transferencia" {{ 'selected' if tipo_filtro == 'transferencia' }}>
+                            🔵 Transferência
+                        </option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <label for="filtroDataInicio" class="form-label small fw-medium">Data Inicial</label>
+                    <input type="date" name="data_inicio" id="filtroDataInicio"
+                           class="form-control" value="{{ data_inicio }}">
+                </div>
+                <div class="col-12 col-md-3">
+                    <label for="filtroDataFim" class="form-label small fw-medium">Data Final</label>
+                    <input type="date" name="data_fim" id="filtroDataFim"
+                           class="form-control" value="{{ data_fim }}">
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-accent flex-grow-1">
+                            <i class="bi bi-funnel me-1"></i> Filtrar
+                        </button>
+                        <a href="{{ url_for('web.historico') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabela de Histórico -->
+    {% if registros %}
+    <div class="card card-glass">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th class="ps-4"><i class="bi bi-calendar3 me-1"></i> Data/Hora</th>
+                        <th><i class="bi bi-box me-1"></i> Produto</th>
+                        <th><i class="bi bi-tag me-1"></i> Tipo</th>
+                        <th><i class="bi bi-geo-alt me-1"></i> Posição</th>
+                        <th class="text-center"><i class="bi bi-123 me-1"></i> Qtd</th>
+                        <th><i class="bi bi-person me-1"></i> Usuário</th>
+                        <th><i class="bi bi-chat-text me-1"></i> Observação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reg in registros %}
+                    <tr>
+                        <td class="ps-4">
+                            <small>{{ reg.data_hora.strftime('%d/%m/%Y') if reg.data_hora else '-' }}</small>
+                            <br>
+                            <small class="text-muted">{{ reg.data_hora.strftime('%H:%M') if reg.data_hora else '' }}</small>
+                        </td>
+                        <td>
+                            <span class="fw-medium">{{ reg.produto.nome if reg.produto else '-' }}</span>
+                        </td>
+                        <td>
+                            {% if reg.tipo == 'entrada' %}
+                                <span class="badge bg-success bg-opacity-25 text-success">
+                                    <i class="bi bi-arrow-down-circle me-1"></i>Entrada
+                                </span>
+                            {% elif reg.tipo == 'saida' %}
+                                <span class="badge bg-danger bg-opacity-25 text-danger">
+                                    <i class="bi bi-arrow-up-circle me-1"></i>Saída
+                                </span>
+                            {% else %}
+                                <span class="badge bg-primary bg-opacity-25 text-primary">
+                                    <i class="bi bi-arrow-left-right me-1"></i>Transferência
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-dark border border-secondary">
+                                {{ reg.posicao.codigo if reg.posicao else '-' }}
+                            </span>
+                        </td>
+                        <td class="text-center fw-semibold">{{ reg.quantidade_movimentada }}</td>
+                        <td>
+                            <small class="text-muted">{{ reg.usuario.username if reg.usuario else '-' }}</small>
+                        </td>
+                        <td>
+                            {% if reg.observacao %}
+                            <small class="text-muted text-truncate d-inline-block" style="max-width: 200px;"
+                                   title="{{ reg.observacao }}">
+                                {{ reg.observacao }}
+                            </small>
+                            {% else %}
+                            <small class="text-muted">—</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Paginação -->
+    {% if pagination.pages > 1 %}
+    <nav aria-label="Navegação de páginas" class="mt-4">
+        <ul class="pagination pagination-dark justify-content-center">
+            <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+                <a class="page-link"
+                   href="{{ url_for('web.historico', page=pagination.prev_num, tipo=tipo_filtro, data_inicio=data_inicio, data_fim=data_fim) }}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if p %}
+                <li class="page-item {{ 'active' if p == pagination.page }}">
+                    <a class="page-link"
+                       href="{{ url_for('web.historico', page=p, tipo=tipo_filtro, data_inicio=data_inicio, data_fim=data_fim) }}">
+                        {{ p }}
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% endif %}
+            {% endfor %}
+            <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+                <a class="page-link"
+                   href="{{ url_for('web.historico', page=pagination.next_num, tipo=tipo_filtro, data_inicio=data_inicio, data_fim=data_fim) }}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-5">
+        <div class="empty-state-icon mb-3">
+            <i class="bi bi-clock"></i>
+        </div>
+        <h4 class="fw-semibold mb-2">Nenhuma movimentação encontrada</h4>
+        <p class="text-muted">
+            {% if tipo_filtro or data_inicio or data_fim %}
+                Tente ajustar os filtros para encontrar registros.
+            {% else %}
+                As movimentações de estoque aparecerão aqui.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Validação de datas
+    document.getElementById('filtroForm')?.addEventListener('submit', function(e) {
+        const inicio = document.getElementById('filtroDataInicio').value;
+        const fim = document.getElementById('filtroDataFim').value;
+        if (inicio && fim && inicio > fim) {
+            e.preventDefault();
+            alert('Data inicial deve ser anterior ou igual à data final.');
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Gestão de Produtos — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold">
+                <i class="bi bi-box-fill text-accent me-2"></i>Gestão de Produtos
+            </h1>
+            <p class="text-muted mb-0">Cadastre, edite e gerencie os produtos do estoque</p>
+        </div>
+        <a href="{{ url_for('web.criar_produto') }}" class="btn btn-accent mt-2 mt-md-0">
+            <i class="bi bi-plus-lg me-1"></i> Novo Produto
+        </a>
+    </div>
+
+    {% if pagination.items %}
+    <div class="card card-glass">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Nome</th>
+                        <th>Marca</th>
+                        <th>Tamanho</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Estoque</th>
+                        <th class="text-end pe-4">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for produto in pagination.items %}
+                    <tr class="{{ 'opacity-50' if not produto.ativo }}">
+                        <td class="ps-4 fw-medium">{{ produto.nome }}</td>
+                        <td>{{ produto.marca or '—' }}</td>
+                        <td>{{ produto.tamanho or '—' }}</td>
+                        <td class="text-center">
+                            {% if produto.ativo %}
+                            <span class="badge bg-success bg-opacity-25 text-success">Ativo</span>
+                            {% else %}
+                            <span class="badge bg-danger bg-opacity-25 text-danger">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">{{ produto.total_estoque }} un</td>
+                        <td class="text-end pe-4">
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a href="{{ url_for('web.editar_produto', id=produto.id) }}"
+                                   class="btn btn-sm btn-outline-warning" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('web.toggle_produto', id=produto.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-info"
+                                            title="{{ 'Desativar' if produto.ativo else 'Ativar' }}">
+                                        <i class="bi bi-{{ 'eye-slash' if produto.ativo else 'eye' }}"></i>
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('web.excluir_produto', id=produto.id) }}" class="d-inline"
+                                      onsubmit="return confirm('Excluir \'{{ produto.nome }}\'? Esta ação não pode ser desfeita.');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination pagination-dark justify-content-center">
+            {% for p in pagination.iter_pages() %}
+                {% if p %}
+                <li class="page-item {{ 'active' if p == pagination.page }}">
+                    <a class="page-link" href="{{ url_for('web.listar_produtos', page=p) }}">{{ p }}</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-5">
+        <div class="empty-state-icon mb-3"><i class="bi bi-box"></i></div>
+        <h4 class="fw-semibold">Nenhum produto cadastrado</h4>
+        <a href="{{ url_for('web.criar_produto') }}" class="btn btn-accent mt-3">
+            <i class="bi bi-plus-lg me-1"></i> Cadastrar Produto
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

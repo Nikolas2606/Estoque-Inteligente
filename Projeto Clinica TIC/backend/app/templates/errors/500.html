@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Erro Interno — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+    <div class="empty-state-icon mb-3 text-danger"><i class="bi bi-exclamation-triangle"></i></div>
+    <h2 class="fw-bold mb-2">500 — Erro Interno</h2>
+    <p class="text-muted mb-4">Servidor temporariamente indisponível. Tente novamente em alguns instantes.</p>
+    <a href="{{ url_for('web.dashboard') }}" class="btn btn-accent">
+        <i class="bi bi-arrow-left me-1"></i> Voltar ao Dashboard
+    </a>
+</div>
+{% endblock %}

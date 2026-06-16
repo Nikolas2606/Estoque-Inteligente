@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}Movimentação — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 800px;">
+    <!-- Header -->
+    <div class="mb-4">
+        <a href="{{ url_for('web.dashboard') }}" class="btn btn-sm btn-outline-secondary mb-3">
+            <i class="bi bi-arrow-left me-1"></i> Voltar ao Dashboard
+        </a>
+        <h1 class="h3 fw-bold">
+            <i class="bi bi-arrow-left-right text-accent me-2"></i>Movimentação de Estoque
+        </h1>
+        <p class="text-muted">Registre entradas, saídas e transferências de produtos</p>
+    </div>
+
+    <!-- Formulário -->
+    <div class="card card-glass">
+        <div class="card-body p-4">
+            <form method="POST" action="{{ url_for('web.movimentacao') }}" novalidate id="movimentacaoForm">
+                {{ form.hidden_tag() }}
+
+                <!-- Tipo de Movimento -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">
+                        <i class="bi bi-signpost-2 me-1"></i> Tipo de Movimento
+                    </label>
+                    <div class="d-flex flex-wrap gap-3 mt-2" id="tipoMovimentoGroup">
+                        <div class="form-check tipo-radio">
+                            <input class="form-check-input" type="radio" name="tipo_movimento"
+                                   id="tipoEntrada" value="entrada"
+                                   {{ 'checked' if form.tipo_movimento.data == 'entrada' }}>
+                            <label class="form-check-label tipo-label tipo-entrada" for="tipoEntrada">
+                                <i class="bi bi-box-arrow-in-down me-1"></i> Entrada
+                            </label>
+                        </div>
+                        <div class="form-check tipo-radio">
+                            <input class="form-check-input" type="radio" name="tipo_movimento"
+                                   id="tipoSaida" value="saida"
+                                   {{ 'checked' if form.tipo_movimento.data == 'saida' }}>
+                            <label class="form-check-label tipo-label tipo-saida" for="tipoSaida">
+                                <i class="bi bi-box-arrow-up me-1"></i> Saída
+                            </label>
+                        </div>
+                        <div class="form-check tipo-radio">
+                            <input class="form-check-input" type="radio" name="tipo_movimento"
+                                   id="tipoTransferencia" value="transferencia"
+                                   {{ 'checked' if form.tipo_movimento.data == 'transferencia' }}>
+                            <label class="form-check-label tipo-label tipo-transferencia" for="tipoTransferencia">
+                                <i class="bi bi-arrow-left-right me-1"></i> Transferência
+                            </label>
+                        </div>
+                    </div>
+                    {% if form.tipo_movimento.errors %}
+                        {% for error in form.tipo_movimento.errors %}
+                        <div class="invalid-feedback d-block mt-2">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <hr class="border-secondary border-opacity-25 my-4">
+
+                <!-- Produto -->
+                <div class="mb-3">
+                    <label for="produto_id" class="form-label fw-semibold">
+                        <i class="bi bi-box-seam me-1"></i> Produto
+                    </label>
+                    <select name="produto_id" id="produto_id" class="form-select form-select-lg" required>
+                        <option value="" disabled {{ 'selected' if not form.produto_id.data }}>
+                            -- Selecione um produto --
+                        </option>
+                        {% for value, label in form.produto_id.choices %}
+                        <option value="{{ value }}" {{ 'selected' if form.produto_id.data == value }}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.produto_id.errors %}
+                        {% for error in form.produto_id.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Posição Origem -->
+                <div class="mb-3">
+                    <label for="posicao_origem_id" class="form-label fw-semibold">
+                        <i class="bi bi-geo-alt me-1"></i>
+                        <span id="labelPosicaoOrigem">Posição</span>
+                    </label>
+                    <select name="posicao_origem_id" id="posicao_origem_id"
+                            class="form-select form-select-lg" required>
+                        <option value="" disabled {{ 'selected' if not form.posicao_origem_id.data }}>
+                            -- Selecione a posição --
+                        </option>
+                        {% for value, label in form.posicao_origem_id.choices %}
+                        <option value="{{ value }}" {{ 'selected' if form.posicao_origem_id.data == value }}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.posicao_origem_id.errors %}
+                        {% for error in form.posicao_origem_id.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Posição Destino (só para Transferência) -->
+                <div class="mb-3" id="posicaoDestinoGroup" style="display: none;">
+                    <label for="posicao_destino_id" class="form-label fw-semibold">
+                        <i class="bi bi-geo-alt-fill me-1"></i> Posição Destino
+                    </label>
+                    <select name="posicao_destino_id" id="posicao_destino_id"
+                            class="form-select form-select-lg">
+                        {% for value, label in form.posicao_destino_id.choices %}
+                        <option value="{{ value }}" {{ 'selected' if form.posicao_destino_id.data == value }}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.posicao_destino_id.errors %}
+                        {% for error in form.posicao_destino_id.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Quantidade -->
+                <div class="mb-3">
+                    <label for="quantidade" class="form-label fw-semibold">
+                        <i class="bi bi-123 me-1"></i> Quantidade
+                    </label>
+                    {{ form.quantidade(id="quantidade") }}
+                    {% if form.quantidade.errors %}
+                        {% for error in form.quantidade.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Observação -->
+                <div class="mb-4">
+                    <label for="observacao" class="form-label fw-semibold">
+                        <i class="bi bi-chat-text me-1"></i> Observação
+                        <small class="text-muted fw-normal">(opcional)</small>
+                    </label>
+                    {{ form.observacao(id="observacao") }}
+                    <div class="form-text text-end">
+                        <span id="charCount">0</span>/500 caracteres
+                    </div>
+                    {% if form.observacao.errors %}
+                        {% for error in form.observacao.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <hr class="border-secondary border-opacity-25 my-4">
+
+                <!-- Botões -->
+                <div class="d-flex gap-3 justify-content-end">
+                    <a href="{{ url_for('web.dashboard') }}" class="btn btn-outline-secondary btn-lg">
+                        <i class="bi bi-x-lg me-1"></i> Cancelar
+                    </a>
+                    {{ form.submit(id="btnSubmit") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Toggle posição destino baseado no tipo de movimento
+    document.querySelectorAll('input[name="tipo_movimento"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const destiGroup = document.getElementById('posicaoDestinoGroup');
+            const labelOrigem = document.getElementById('labelPosicaoOrigem');
+
+            if (this.value === 'transferencia') {
+                destiGroup.style.display = 'block';
+                labelOrigem.textContent = 'Posição Origem';
+            } else {
+                destiGroup.style.display = 'none';
+                labelOrigem.textContent = 'Posição';
+            }
+        });
+    });
+
+    // Inicializar estado se transferência já selecionada
+    const checkedRadio = document.querySelector('input[name="tipo_movimento"]:checked');
+    if (checkedRadio) checkedRadio.dispatchEvent(new Event('change'));
+
+    // Contador de caracteres da observação
+    const obs = document.getElementById('observacao');
+    const counter = document.getElementById('charCount');
+    if (obs && counter) {
+        obs.addEventListener('input', () => {
+            counter.textContent = obs.value.length;
+            counter.classList.toggle('text-danger', obs.value.length > 500);
+        });
+        counter.textContent = obs.value.length;
+    }
+
+    // Validação client-side
+    document.getElementById('movimentacaoForm')?.addEventListener('submit', function(e) {
+        const tipo = document.querySelector('input[name="tipo_movimento"]:checked');
+        if (!tipo) {
+            e.preventDefault();
+            alert('Selecione o tipo de movimento.');
+            return;
+        }
+
+        if (tipo.value === 'transferencia') {
+            const origem = document.getElementById('posicao_origem_id').value;
+            const destino = document.getElementById('posicao_destino_id').value;
+            if (origem === destino && destino !== '' && destino !== '0') {
+                e.preventDefault();
+                alert('Posição origem e destino não podem ser iguais.');
+                return;
+            }
+            if (!destino || destino === '0') {
+                e.preventDefault();
+                alert('Selecione a posição de destino.');
+                return;
+            }
+        }
+
+        const qtd = parseInt(document.getElementById('quantidade').value);
+        if (isNaN(qtd) || qtd < 1 || qtd > 999) {
+            e.preventDefault();
+            alert('Quantidade deve ser entre 1 e 999.');
+            return;
+        }
+    });
+</script>
+{% endblock %}

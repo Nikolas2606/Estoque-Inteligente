@@ -1,0 +1,23 @@
+# Ambiente
+.env
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Flask
+instance/
+*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Docker
+mosquitto_data/
+mosquitto_log/
+
+# OS
+.DS_Store
+Thumbs.db

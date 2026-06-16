@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Login — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="login-wrapper">
+    <div class="login-card">
+        <!-- Logo / Header -->
+        <div class="text-center mb-4">
+            <div class="login-icon-wrapper mb-3">
+                <i class="bi bi-box-seam-fill"></i>
+            </div>
+            <h1 class="h3 fw-bold mb-1">{{ app_name }}</h1>
+            <p class="text-muted small">Sistema de Gestão de Inventário Inteligente</p>
+        </div>
+
+        <!-- Formulário de Login -->
+        <form method="POST" action="{{ url_for('auth.login') }}" novalidate id="loginForm">
+            {{ form.hidden_tag() }}
+
+            <!-- Username -->
+            <div class="mb-3">
+                <label for="username" class="form-label fw-medium">
+                    <i class="bi bi-person me-1"></i> Usuário
+                </label>
+                {{ form.username(id="username", class="form-control form-control-lg") }}
+                {% if form.username.errors %}
+                    {% for error in form.username.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- Password -->
+            <div class="mb-4">
+                <label for="password" class="form-label fw-medium">
+                    <i class="bi bi-lock me-1"></i> Senha
+                </label>
+                <div class="input-group">
+                    {{ form.password(id="password", class="form-control form-control-lg") }}
+                    <button class="btn btn-outline-secondary" type="button"
+                            id="togglePassword" aria-label="Mostrar senha">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                {% if form.password.errors %}
+                    {% for error in form.password.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- Submit -->
+            {{ form.submit(id="btnLogin") }}
+        </form>
+    </div>
+
+    <!-- Decorative glow elements -->
+    <div class="login-glow login-glow-1"></div>
+    <div class="login-glow login-glow-2"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Toggle password visibility
+    document.getElementById('togglePassword')?.addEventListener('click', function() {
+        const pwd = document.getElementById('password');
+        const icon = this.querySelector('i');
+        if (pwd.type === 'password') {
+            pwd.type = 'text';
+            icon.classList.replace('bi-eye', 'bi-eye-slash');
+        } else {
+            pwd.type = 'password';
+            icon.classList.replace('bi-eye-slash', 'bi-eye');
+        }
+    });
+</script>
+{% endblock %}
