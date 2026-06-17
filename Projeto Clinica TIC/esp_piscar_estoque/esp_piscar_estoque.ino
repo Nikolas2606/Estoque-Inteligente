@@ -4,10 +4,10 @@
 
 // ===== WIFI =====
 const char* ssid = "Oi_Velox_WiFi_192D";
-const char* password = "estoqueinteligente";
+const char* password = "meuoiveloxwifi";
 
 // ===== MQTT =====
-const char* mqtt_server = "172.20.10.2";
+const char* mqtt_server = "192.168.1.100";
 const int mqtt_port = 1883;
 
 // ===== CLIENT =====
